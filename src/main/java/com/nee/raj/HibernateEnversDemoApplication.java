@@ -5,9 +5,11 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.DefaultRevisionEntity;
 import org.hibernate.envers.query.AuditEntity;
 import org.hsqldb.util.DatabaseManagerSwing;
 import org.slf4j.Logger;
@@ -23,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nee.raj.entity.Customer;
 import com.nee.raj.repo.CustomerRepository;
-import com.nee.raj.utils.HibernateUtils;
 
 @SpringBootApplication
 @RestController
@@ -34,6 +35,9 @@ public class HibernateEnversDemoApplication {
 	
 	@Autowired
 	private  EntityManager entityManager;
+	
+	@Autowired
+	private  EntityManagerFactory entityManagerFactory;
 	
 	 @RequestMapping("/greeting")
 	    String home() {
@@ -82,7 +86,7 @@ public class HibernateEnversDemoApplication {
             
             
          // Verifying Auditing. 
-         printPersonHistory(1l);
+         printPersonHistory(3l);
          
 		};
 	}
@@ -91,25 +95,30 @@ public class HibernateEnversDemoApplication {
 	private void printPersonHistory(long personId) {
 		StringBuilder sb = new StringBuilder();
 		
-		//AuditReader reader = AuditReaderFactory.get(entityManager);
-		AuditReader reader = AuditReaderFactory.get(HibernateUtils.getSessionFactory().openSession());
+		entityManager = entityManagerFactory.createEntityManager();
+		entityManager.getTransaction().begin();
 
-        List personHistory = reader.createQuery()
+		AuditReader reader = AuditReaderFactory.get(entityManager);
+		List personHistory = reader.createQuery()
                 .forRevisionsOfEntity(Customer.class, false, true)
                 .add(AuditEntity.id().eq(personId))
                 .getResultList();
-
-//        if (personHistory.size() == 0) {
-//            sb.append("A person with id ").append(personId).append(" does not exist.\n");
-//        } else {
-//            for (Object historyObj : personHistory) {
-//                Object[] history = (Object[]) historyObj;
-//                DefaultRevisionEntity revision = (DefaultRevisionEntity) history[1];
-//                sb.append("revision = ").append(revision.getId()).append(", ");
-//                printCustomer((Customer) history[0]);
-//                sb.append(" (").append(revision.getRevisionDate()).append(")\n");
-//            }
-//        }
+      if (personHistory.size() == 0) {
+      sb.append("A person with id ").append(personId).append(" does not exist.\n");
+  } else {
+      for (Object historyObj : personHistory) {
+          Object[] history = (Object[]) historyObj;
+          DefaultRevisionEntity revision = (DefaultRevisionEntity) history[1];
+          sb.append("revision = ").append(revision.getId()).append(", ");
+          printCustomer((Customer) history[0]);
+          sb.append(" (").append(revision.getRevisionDate()).append(")\n");
+      }
+  }
+      System.out.println("Output" + sb.toString());
+		
+		entityManager.getTransaction().commit();
+		entityManager.close();
+	
     }
 	
 

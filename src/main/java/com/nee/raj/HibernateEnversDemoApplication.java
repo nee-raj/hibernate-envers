@@ -110,7 +110,8 @@ public class HibernateEnversDemoApplication {
           Object[] history = (Object[]) historyObj;
           DefaultRevisionEntity revision = (DefaultRevisionEntity) history[1];
           sb.append("revision = ").append(revision.getId()).append(", ");
-          printCustomer((Customer) history[0]);
+          sb.append( history[0].toString() );
+          sb.append(" (").append(revision.getRevisionDate()).append(")\n");
           sb.append(" (").append(revision.getRevisionDate()).append(")\n");
       }
   }
